@@ -1,66 +1,71 @@
-<!-- ① Load the UMD bundle for Supabase -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.js"></script>
+  <!-- Load Supabase UMD bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.js"></script>
 
-<!-- ② Wrap all logic in DOMContentLoaded so elements exist -->
-<script>
-document.addEventListener('DOMContentLoaded', async () => {
-  console.log('[reset-page] DOMContentLoaded – initializing');
+  <!-- Reset-password logic: must go after your #form and #success markup -->
+  <script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    console.log('[reset-page] DOMContentLoaded – initializing');
 
-  // 1) Grab the UMD factory object
-  const SupabaseFactory = window.supabase;
-  if (!SupabaseFactory) {
-    document.getElementById('msg').textContent =
-      'Internal error: auth library failed to load.';
-    console.error('Supabase UMD factory not found');
-    return;
-  }
-  console.log('[reset-page] UMD factory loaded');
+    // 1) Grab the UMD factory object
+    const SupabaseFactory = window.supabase;
+    if (!SupabaseFactory) {
+      console.error('Supabase UMD factory not found');
+      document.getElementById('msg')?.textContent =
+        'Internal error: auth library failed to load.';
+      return;
+    }
+    console.log('[reset-page] UMD factory loaded');
 
-  // 2) Instantiate your Supabase client
-  const supabaseClient = SupabaseFactory.createClient(
-    'https://qcsxqutctqougpbdlvdq.supabase.co',  // ← your Supabase URL
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjc3hxdXRjdHFvdWdwYmRsdmRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUyNzMwMzAsImV4cCI6MjA2MDg0OTAzMH0.ERBUhLr3Q6A2Rlauy42MABPehFztLKR6_E2IgR7r_1A'                              // ← your anon key
-  );
-  window.supabaseClient = supabaseClient;
-  console.log('[reset-page] supabaseClient created');
+    // 2) Instantiate your client
+    const supabaseClient = SupabaseFactory.createClient(
+      'https://qcsxqutctqougpbdlvdq.supabase.co', // ← your Supabase URL
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjc3hxdXRjdHFvdWdwYmRsdmRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUyNzMwMzAsImV4cCI6MjA2MDg0OTAzMH0.ERBUhLr3Q6A2Rlauy42MABPehFztLKR6_E2IgR7r_1A'                             // ← your anon key
+    );
+    window.supabaseClient = supabaseClient;
+    console.log('[reset-page] supabaseClient created');
 
-  // 3) Cache DOM nodes
-  const btn     = document.getElementById('btn');
-  const pw      = document.getElementById('pw');
-  const msg     = document.getElementById('msg');
-  const formBox = document.getElementById('form');
-  const okBox   = document.getElementById('success');
+    // 3) Now that DOM is ready, grab the elements
+    const btn     = document.getElementById('btn');
+    const pw      = document.getElementById('pw');
+    const msg     = document.getElementById('msg');
+    const formBox = document.getElementById('form');
+    const okBox   = document.getElementById('success');
 
-  // 4) Confirm the implicit-grant session is present
-  const { data, error } = await supabaseClient.auth.getSession();
-  console.log('[session-check]', data.session, error);
-  if (!data.session || error) {
-    msg.textContent = 'Session not found. Please use the link from your email.';
-    return;
-  }
-  btn.disabled = false;
-
-  // 5) Handle the password update
-  btn.addEventListener('click', async () => {
-    const newPw = pw.value.trim();
-    if (newPw.length < 6) {
-      msg.textContent = 'Password must be at least 6 characters.';
+    if (!btn || !pw || !msg || !formBox || !okBox) {
+      console.error('One or more required DOM elements missing');
       return;
     }
 
-    btn.disabled = true;
-    msg.textContent = 'Updating…';
-
-    const { error: updateErr } = await supabaseClient.auth.updateUser({ password: newPw });
-    if (updateErr) {
-      console.error('[updateUser] failed:', updateErr);
-      msg.textContent = updateErr.message || 'Something went wrong.';
-      btn.disabled = false;
-    } else {
-      console.log('[updateUser] success');
-      formBox.style.display = 'none';
-      okBox.style.display  = 'block';
+    // 4) Check that Supabase has parsed the fragment and restored session
+    const { data, error } = await supabaseClient.auth.getSession();
+    console.log('[session-check]', data.session, error);
+    if (!data.session || error) {
+      msg.textContent = 'Session not found. Please use the link from your email.';
+      return;
     }
+    btn.disabled = false;
+
+    // 5) Wire up the click to update the password
+    btn.addEventListener('click', async () => {
+      const newPw = pw.value.trim();
+      if (newPw.length < 6) {
+        msg.textContent = 'Password must be at least 6 characters.';
+        return;
+      }
+
+      btn.disabled = true;
+      msg.textContent = 'Updating…';
+
+      const { error: updateErr } = await supabaseClient.auth.updateUser({ password: newPw });
+      if (updateErr) {
+        console.error('[updateUser] failed:', updateErr);
+        msg.textContent = updateErr.message || 'Something went wrong.';
+        btn.disabled = false;
+      } else {
+        console.log('[updateUser] success');
+        formBox.style.display = 'none';
+        okBox.style.display  = 'block';
+      }
+    });
   });
-});
-</script>
+  </script>
