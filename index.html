@@ -17,7 +17,7 @@
   // 2) Instantiate your actual client
   const supabaseClient = SupabaseFactory.createClient(
     'https://qcsxqutctqougpbdlvdq.supabase.co',  // ← your Supabase URL
-    'YOUR_ANON_KEY'                              // ← your Supabase anon key
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjc3hxdXRjdHFvdWdwYmRsdmRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUyNzMwMzAsImV4cCI6MjA2MDg0OTAzMH0.ERBUhLr3Q6A2Rlauy42MABPehFztLKR6_E2IgR7r_1A'                              // ← your Supabase anon key
   );
   window.supabaseClient = supabaseClient;        // expose for debugging
   console.log('[reset-page] supabaseClient created');
