@@ -1,61 +1,65 @@
-  <!-- Load Supabase UMD -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.js"></script>
-  <script>
-    console.log('[reset-page] script loaded');
+<!-- ① Load the UMD bundle for Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.js"></script>
 
-    // 1) Grab the factory object
-    const SupabaseFactory = window.supabase;
-    if (!SupabaseFactory) {
-      document.getElementById('msg').textContent =
-        'Internal error: auth library failed to load.';
-      throw new Error('Supabase UMD not found');
+<!-- ② Main reset-password logic -->
+<script>
+  console.log('[reset-page] script loaded');
+
+  // 1) Grab the UMD factory object that the bundle exported
+  const SupabaseFactory = window.supabase;
+  if (!SupabaseFactory) {
+    document.getElementById('msg').textContent =
+      'Internal error: auth library failed to load.';
+    throw new Error('Supabase UMD factory not found');
+  }
+  console.log('[reset-page] UMD factory loaded');
+
+  // 2) Instantiate your actual client
+  const supabaseClient = SupabaseFactory.createClient(
+    'https://qcsxqutctqougpbdlvdq.supabase.co',  // ← your Supabase URL
+    'YOUR_ANON_KEY'                              // ← your Supabase anon key
+  );
+  window.supabaseClient = supabaseClient;        // expose for debugging
+  console.log('[reset-page] supabaseClient created');
+
+  // 3) Cache DOM nodes
+  const btn     = document.getElementById('btn');
+  const pw      = document.getElementById('pw');
+  const msg     = document.getElementById('msg');
+  const formBox = document.getElementById('form');
+  const okBox   = document.getElementById('success');
+
+  // 4) On load, verify the implicit‐grant tokens were processed
+  (async () => {
+    const { data, error } = await supabaseClient.auth.getSession();
+    console.log('[session-check]', data.session, error);
+    if (!data.session || error) {
+      msg.textContent = 'Session not found. Please use the link from your email.';
+    } else {
+      btn.disabled = false;
+    }
+  })();
+
+  // 5) When the user clicks “Update password”
+  btn.addEventListener('click', async () => {
+    const newPw = pw.value.trim();
+    if (newPw.length < 6) {
+      msg.textContent = 'Password must be at least 6 characters.';
+      return;
     }
 
-    // 2) Instantiate your client
-    const supabaseClient = SupabaseFactory.createClient(
-      'https://qcsxqutctqougpbdlvdq.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'  // ← your anon key
-    );
-    window.supabaseClient = supabaseClient;
-    console.log('[reset-page] supabaseClient created');
+    btn.disabled = true;
+    msg.textContent = 'Updating…';
 
-    // 3) Wire up the UI
-    const btn     = document.getElementById('btn');
-    const pw      = document.getElementById('pw');
-    const msg     = document.getElementById('msg');
-    const formBox = document.getElementById('form');
-    const okBox   = document.getElementById('success');
-
-    // 4) Wait for the implicit‐grant tokens in the URL fragment
-    (async () => {
-      const { data, error } = await supabaseClient.auth.getSession();
-      console.log('[session-check]', data.session, error);
-      if (!data.session || error) {
-        msg.textContent = 'Session not found—use the link from your email.';
-      } else {
-        btn.disabled = false;
-      }
-    })();
-
-    // 5) Update password on click
-    btn.addEventListener('click', async () => {
-      const newPw = pw.value.trim();
-      if (newPw.length < 6) {
-        msg.textContent = 'Password must be at least 6 characters.';
-        return;
-      }
-      btn.disabled = true;
-      msg.textContent = 'Updating…';
-
-      const { error } = await supabaseClient.auth.updateUser({ password: newPw });
-      if (error) {
-        msg.textContent = error.message;
-        btn.disabled = false;
-      } else {
-        formBox.style.display = 'none';
-        okBox.style.display  = 'block';
-      }
-    });
-  </script>
-</body>
-</html>
+    const { error } = await supabaseClient.auth.updateUser({ password: newPw });
+    if (error) {
+      console.error('[updateUser] failed:', error);
+      msg.textContent = error.message || 'Something went wrong.';
+      btn.disabled = false;
+    } else {
+      console.log('[updateUser] success');
+      formBox.style.display = 'none';
+      okBox.style.display  = 'block';
+    }
+  });
+</script>
