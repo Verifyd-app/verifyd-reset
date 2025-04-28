@@ -32,45 +32,48 @@
       sign in</a> with your new password.</p>
   </div>
 
-  <!-- ① Load UMD build, which defines a global “supabase” factory object -->
+  <!-- ① Load the UMD bundle -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.js"></script>
   <script>
     console.log('[reset-page] script loaded');
 
-    // ② Grab the UMD factory (not a client yet)
-    const SupabaseFactory = window.supabase;
-    console.log('[reset-page] UMD factory:', SupabaseFactory);
+    // ② Grab the UMD factory object
+    const Supabase = window.supabase;
+    if (!Supabase) {
+      console.error('⚠️ Supabase UMD factory not found');
+      document.getElementById('msg').textContent =
+        'Internal error: could not load authentication library.';
+      return;
+    }
+    console.log('[reset-page] UMD factory loaded');
 
-    // ③ Create your actual Supabase client
-    const supabaseClient = SupabaseFactory.createClient(
-      'https://qcsxqutctqougpbdlvdq.supabase.co',  // ← your Supabase URL
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…'      // ← your anon key
+    // ③ Instantiate your client
+    const supabaseClient = Supabase.createClient(
+      'https://qcsxqutctqougpbdlvdq.supabase.co',  // ← YOUR Supabase URL
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…'      // ← YOUR anon key
     );
+    window.supabaseClient = supabaseClient;  // optional, for console
+    console.log('[reset-page] supabaseClient created');
 
-    // ④ Expose it for the rest of your code & the console
-    window.supabase = supabaseClient;
-    const supabase = supabaseClient;
-    console.log('[reset-page] client attached to window.supabase');
-
-    // ⑤ Cache DOM nodes
+    // ④ Cache DOM elements
     const btn     = document.getElementById('btn');
     const pw      = document.getElementById('pw');
     const msg     = document.getElementById('msg');
     const formBox = document.getElementById('form');
     const okBox   = document.getElementById('success');
 
-    // ⑥ On load, confirm the implicit‐grant session is restored
+    // ⑤ On load - check that the implicit grant session is present
     (async () => {
-      const { data, error } = await supabase.auth.getSession();
+      const { data, error } = await supabaseClient.auth.getSession();
       console.log('[session-check]', data, error);
       if (error || !data.session) {
-        msg.textContent = 'Session not found. Please use the link from your email.';
+        msg.textContent = 'Session not found. Use the link from your email.';
       } else {
         btn.disabled = false;
       }
     })();
 
-    // ⑦ On click, update the password
+    // ⑥ On click - update password
     btn.addEventListener('click', async () => {
       const newPw = pw.value.trim();
       if (newPw.length < 6) {
@@ -81,7 +84,7 @@
       btn.disabled = true;
       msg.textContent = 'Updating…';
 
-      const { error } = await supabase.auth.updateUser({ password: newPw });
+      const { error } = await supabaseClient.auth.updateUser({ password: newPw });
       if (error) {
         console.error('[updateUser] failed:', error);
         msg.textContent = error.message || 'Something went wrong.';
