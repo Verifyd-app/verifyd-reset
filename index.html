@@ -1,96 +1,57 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8"/>
-  <title>Verifyd – Reset Password</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-</head>
-<body style="background:#1d1c1a;color:#fff;font-family:Arial;
-             padding:30px;max-width:400px;margin:40px auto;border-radius:12px">
-
-  <h2 style="text-align:center;color:#0070f3">Reset your password</h2>
-
-  <div id="form">
-    <input id="pw" type="password" placeholder="New password"
-           style="width:100%;padding:14px;margin:12px 0;
-                  border-radius:8px;border:none;font-size:16px"/>
-
-    <button id="btn" disabled
-            style="background:#0070f3;width:100%;padding:14px;
-                   border:none;border-radius:8px;font-size:16px;
-                   color:#fff;cursor:pointer">
-      Update password
-    </button>
-
-    <div id="msg" style="margin-top:20px;text-align:center;"></div>
-  </div>
-
-  <div id="success" style="display:none;text-align:center;margin-top:30px">
-    <div style="font-size:48px;color:#00c851">✔️</div>
-    <h3 style="margin-top:12px;">Password Updated!</h3>
-    <p>You can now <a href="/login" style="color:#82B3ED;text-decoration:underline">
-      sign in</a> with your new password.</p>
-  </div>
-
-  <!-- ① Load the UMD bundle -->
+  <!-- Load Supabase UMD -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.js"></script>
   <script>
     console.log('[reset-page] script loaded');
 
-    // ② Grab the UMD factory object
-    const Supabase = window.supabase;
-    if (!Supabase) {
-      console.error('⚠️ Supabase UMD factory not found');
+    // 1) Grab the factory object
+    const SupabaseFactory = window.supabase;
+    if (!SupabaseFactory) {
       document.getElementById('msg').textContent =
-        'Internal error: could not load authentication library.';
-      return;
+        'Internal error: auth library failed to load.';
+      throw new Error('Supabase UMD not found');
     }
-    console.log('[reset-page] UMD factory loaded');
 
-    // ③ Instantiate your client
-    const supabaseClient = Supabase.createClient(
-      'https://qcsxqutctqougpbdlvdq.supabase.co',  // ← YOUR Supabase URL
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…'      // ← YOUR anon key
+    // 2) Instantiate your client
+    const supabaseClient = SupabaseFactory.createClient(
+      'https://qcsxqutctqougpbdlvdq.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'  // ← your anon key
     );
-    window.supabaseClient = supabaseClient;  // optional, for console
+    window.supabaseClient = supabaseClient;
     console.log('[reset-page] supabaseClient created');
 
-    // ④ Cache DOM elements
+    // 3) Wire up the UI
     const btn     = document.getElementById('btn');
     const pw      = document.getElementById('pw');
     const msg     = document.getElementById('msg');
     const formBox = document.getElementById('form');
     const okBox   = document.getElementById('success');
 
-    // ⑤ On load - check that the implicit grant session is present
+    // 4) Wait for the implicit‐grant tokens in the URL fragment
     (async () => {
       const { data, error } = await supabaseClient.auth.getSession();
-      console.log('[session-check]', data, error);
-      if (error || !data.session) {
-        msg.textContent = 'Session not found. Use the link from your email.';
+      console.log('[session-check]', data.session, error);
+      if (!data.session || error) {
+        msg.textContent = 'Session not found—use the link from your email.';
       } else {
         btn.disabled = false;
       }
     })();
 
-    // ⑥ On click - update password
+    // 5) Update password on click
     btn.addEventListener('click', async () => {
       const newPw = pw.value.trim();
       if (newPw.length < 6) {
         msg.textContent = 'Password must be at least 6 characters.';
         return;
       }
-
       btn.disabled = true;
       msg.textContent = 'Updating…';
 
       const { error } = await supabaseClient.auth.updateUser({ password: newPw });
       if (error) {
-        console.error('[updateUser] failed:', error);
-        msg.textContent = error.message || 'Something went wrong.';
+        msg.textContent = error.message;
         btn.disabled = false;
       } else {
-        console.log('[updateUser] success');
         formBox.style.display = 'none';
         okBox.style.display  = 'block';
       }
