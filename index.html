@@ -5,20 +5,128 @@
   <title>Verifyd – Reset Password</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
-    body      { background:#1d1c1a; color:#fff; font-family:Arial; }
-    #wrapper  { max-width:400px; margin:40px auto; padding:30px; border-radius:12px;
-                background:#1d1c1a; }
-    input     { width:100%; padding:14px; margin:12px 0;
-                border-radius:8px; border:none; font-size:16px; }
-    button    { background:#0070f3; width:100%; padding:14px; border:none;
-                border-radius:8px; font-size:16px; color:#fff; cursor:pointer; }
-    #msg      { margin-top:20px; text-align:center; }
-    #success  { display:none; text-align:center; margin-top:30px; }
+    /* ───────────────────────────────────────────────────────────── */
+    /* Base & Wrapper                                                */
+    /* ───────────────────────────────────────────────────────────── */
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #1d1c1a, #2a2926);
+      color: #fff;
+      font-family: Arial, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    #wrapper {
+      background: #1d1c1a;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+      max-width: 400px;
+      width: 90%;
+      padding: 32px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ───────────────────────────────────────────────────────────── */
+    /* Headline                                                      */
+    /* ───────────────────────────────────────────────────────────── */
+    h2 {
+      margin: 0 0 24px;
+      font-size: 24px;
+      text-align: center;
+      color: #0070f3;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+
+    /* ───────────────────────────────────────────────────────────── */
+    /* Inputs & Button                                              */
+    /* ───────────────────────────────────────────────────────────── */
+    input {
+      width: 100%;
+      padding: 14px;
+      margin: 8px 0 16px;
+      border-radius: 8px;
+      border: 2px solid transparent;
+      background: #2a2926;
+      color: #fff;
+      font-size: 16px;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    input::placeholder {
+      color: #888;
+    }
+    input:focus {
+      outline: none;
+      border-color: #0070f3;
+      box-shadow: 0 0 8px rgba(0,112,243,0.5);
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      background: #0070f3;
+      color: #fff;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.3s, transform 0.2s, box-shadow 0.3s;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    button:hover:not(:disabled) {
+      background: #005bb5;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.5);
+    }
+    button:disabled {
+      background: #555;
+      cursor: not-allowed;
+      opacity: 0.7;
+      box-shadow: none;
+    }
+
+    /* ───────────────────────────────────────────────────────────── */
+    /* Message & Success                                             */
+    /* ───────────────────────────────────────────────────────────── */
+    #msg {
+      min-height: 20px;
+      font-size: 14px;
+      color: #ff6b6b;
+      text-align: center;
+      transition: opacity 0.3s;
+    }
+
+    #success {
+      display: none;
+      text-align: center;
+      animation: popIn 0.6s ease-out forwards;
+    }
+    #success div.check {
+      font-size: 48px;
+      color: #00c851;
+      animation: popIn 0.6s ease-out forwards 0.2s;
+    }
+    @keyframes popIn {
+      0%   { opacity: 0; transform: scale(0.5); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    /* ───────────────────────────────────────────────────────────── */
+    /* Links                                                        */
+    /* ───────────────────────────────────────────────────────────── */
+    #success p {
+      margin: 16px 0 0;
+      font-size: 16px;
+    }
   </style>
 </head>
 <body>
   <div id="wrapper">
-    <h2 style="text-align:center;color:#0070f3">Reset your password</h2>
+    <h2>Reset your password</h2>
 
     <!-- ①  form section -->
     <div id="form">
@@ -29,9 +137,9 @@
 
     <!-- ②  success section -->
     <div id="success">
-      <div style="font-size:48px;color:#00c851">✔️</div>
+      <div class="check">✔️</div>
       <h3>Password updated!</h3>
-      <p>You can now sign in with your new password!</p>
+      <p>You can now sign in with your new password.</p>
     </div>
   </div>
 
@@ -41,51 +149,52 @@
   <!-- ④  Logic (runs only after DOM is parsed) -->
   <script>
   document.addEventListener('DOMContentLoaded', async () => {
-    console.log('[reset-page] DOMContentLoaded');
-
     const SupabaseFactory = window.supabase;
     if (!SupabaseFactory) {
-      console.error('Supabase UMD factory not found'); return;
+      console.error('Supabase UMD factory not found');
+      document.getElementById('msg').textContent = 'Internal error.';
+      return;
     }
 
     const supabaseClient = SupabaseFactory.createClient(
-      'https://qcsxqutctqougpbdlvdq.supabase.co',   // ← your Supabase URL
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjc3hxdXRjdHFvdWdwYmRsdmRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUyNzMwMzAsImV4cCI6MjA2MDg0OTAzMH0.ERBUhLr3Q6A2Rlauy42MABPehFztLKR6_E2IgR7r_1A'                               // ← your anon key
+      'https://qcsxqutctqougpbdlvdq.supabase.co',
+      'YOUR_ANON_KEY'
     );
-    console.log('[reset-page] supabaseClient created');
 
-    // grab elements (they now exist)
+    // cache elements
     const btn     = document.getElementById('btn');
     const pw      = document.getElementById('pw');
     const msg     = document.getElementById('msg');
     const formBox = document.getElementById('form');
     const okBox   = document.getElementById('success');
 
-    // check session from implicit-grant fragment
+    // 1) check session from fragment
     const { data, error } = await supabaseClient.auth.getSession();
-    console.log('[session-check]', data.session, error);
     if (!data.session || error) {
       msg.textContent = 'Session not found. Please use the link from your email.';
       return;
     }
     btn.disabled = false;
 
-    // update password
+    // 2) update password on click
     btn.addEventListener('click', async () => {
       const newPw = pw.value.trim();
       if (newPw.length < 6) {
-        msg.textContent = 'Password must be at least 6 characters.'; return;
+        msg.textContent = 'Password must be at least 6 characters.';
+        return;
       }
-      btn.disabled = true; msg.textContent = 'Updating…';
 
-      const { error: updErr } =
-        await supabaseClient.auth.updateUser({ password: newPw });
+      btn.disabled = true;
+      msg.textContent = 'Updating…';
 
+      const { error: updErr } = await supabaseClient.auth.updateUser({ password: newPw });
       if (updErr) {
         msg.textContent = updErr.message || 'Something went wrong.';
         btn.disabled = false;
       } else {
-        formBox.style.display = 'none'; okBox.style.display = 'block';
+        // swap to success UI
+        formBox.style.display = 'none';
+        okBox.style.display  = 'block';
       }
     });
   });
