@@ -5,19 +5,20 @@
   <title>Verifyd – Reset Password</title>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
 </head>
-<body style="background:#1d1c1a;color:#fff;font-family:Arial;padding:30px;
-             max-width:400px;margin:40px auto;border-radius:12px">
+<body style="background:#1d1c1a;color:#fff;font-family:Arial;
+             padding:30px;max-width:400px;margin:40px auto;border-radius:12px">
 
   <h2 style="text-align:center;color:#0070f3">Reset your password</h2>
 
   <div id="form">
     <input id="pw" type="password" placeholder="New password"
-           style="width:100%;padding:14px;margin:12px 0;border-radius:8px;
-                  border:none;font-size:16px"/>
+           style="width:100%;padding:14px;margin:12px 0;
+                  border-radius:8px;border:none;font-size:16px"/>
 
     <button id="btn" disabled
-            style="background:#0070f3;width:100%;padding:14px;border:none;
-                   border-radius:8px;font-size:16px;color:#fff;cursor:pointer">
+            style="background:#0070f3;width:100%;padding:14px;
+                   border:none;border-radius:8px;font-size:16px;
+                   color:#fff;cursor:pointer">
       Update password
     </button>
 
@@ -31,42 +32,45 @@
       sign in</a> with your new password.</p>
   </div>
 
+  <!-- ① Load UMD build, which defines a global “supabase” factory object -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.js"></script>
   <script>
     console.log('[reset-page] script loaded');
 
-    // ① initialize client
-    const supabase = supabase.createClient(
+    // ② Grab the UMD factory (not a client yet)
+    const SupabaseFactory = window.supabase;
+    console.log('[reset-page] UMD factory:', SupabaseFactory);
+
+    // ③ Create your actual Supabase client
+    const supabaseClient = SupabaseFactory.createClient(
       'https://qcsxqutctqougpbdlvdq.supabase.co',  // ← your Supabase URL
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…'      // ← your anon key
     );
-    window.supabase = supabase;
+
+    // ④ Expose it for the rest of your code & the console
+    window.supabase = supabaseClient;
+    const supabase = supabaseClient;
     console.log('[reset-page] client attached to window.supabase');
 
-    const btn = document.getElementById('btn');
-    const pw  = document.getElementById('pw');
-    const msg = document.getElementById('msg');
-    const form    = document.getElementById('form');
-    const success = document.getElementById('success');
+    // ⑤ Cache DOM nodes
+    const btn     = document.getElementById('btn');
+    const pw      = document.getElementById('pw');
+    const msg     = document.getElementById('msg');
+    const formBox = document.getElementById('form');
+    const okBox   = document.getElementById('success');
 
-    // ② Let Supabase parse the fragment (implicit grant) before we do anything
-    //    The UMD client by default uses `detectSessionInUrl: true`
-    //    so on load it will read `#access_token=…&refresh_token=…&type=recovery`
-    //    and populate its in-memory session + localStorage.
-    //
-    //    We simply need to call `getSession()` once to confirm it:
+    // ⑥ On load, confirm the implicit‐grant session is restored
     (async () => {
       const { data, error } = await supabase.auth.getSession();
-      console.log('[session-check]', { session: data.session, error });
+      console.log('[session-check]', data, error);
       if (error || !data.session) {
-        msg.textContent = 'Session not found. Make sure you clicked the link from your email.';
+        msg.textContent = 'Session not found. Please use the link from your email.';
       } else {
-        // Only enable the UI once we actually have a valid recovery session
         btn.disabled = false;
       }
     })();
 
-    // ③ Hook up the click to updateUser()
+    // ⑦ On click, update the password
     btn.addEventListener('click', async () => {
       const newPw = pw.value.trim();
       if (newPw.length < 6) {
@@ -84,8 +88,8 @@
         btn.disabled = false;
       } else {
         console.log('[updateUser] success');
-        form.style.display    = 'none';
-        success.style.display = 'block';
+        formBox.style.display = 'none';
+        okBox.style.display  = 'block';
       }
     });
   </script>
