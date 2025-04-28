@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Verifyd – Reset Password</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body style="background-color:#1d1c1a;color:#fff;font-family:Arial;padding:30px;max-width:400px;margin:40px auto;border-radius:12px">
+
+  <h2 style="text-align:center;color:#0070f3">Reset your password</h2>
+
+  <div id="form">
+    <input id="pw" type="password" placeholder="New password"
+           style="width:100%;padding:14px;margin:12px 0;border-radius:8px;border:none;font-size:16px"/>
+
+    <button id="btn"
+            style="background-color:#0070f3;width:100%;padding:14px;border:none;border-radius:8px;font-size:16px;color:white;cursor:pointer;margin-top:10px">
+      Update password
+    </button>
+
+    <div id="msg" style="margin-top:20px;text-align:center;"></div>
+  </div>
+
+  <div id="success" style="display:none;text-align:center;margin-top:30px;">
+    <div style="font-size:48px;color:#00c851;">✔️</div>
+    <h3 style="margin-top:12px;">Password Updated!</h3>
+    <p>You can now <a href="/login" style="color:#82B3ED;text-decoration:underline;">sign in</a> with your new password.</p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script>
+    console.log('[reset-page] script loaded');                       // #0
+
+    const supabase = window.supabase.createClient(
+      'https://qcsxqutctqougpbdlvdq.supabase.co',        // ← your Supabase URL
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjc3hxdXRjdHFvdWdwYmRsdmRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUyNzMwMzAsImV4cCI6MjA2MDg0OTAzMH0.ERBUhLr3Q6A2Rlauy42MABPehFztLKR6_E2IgR7r_1A'          // ← your Supabase anon key
+    );
+    window.supabase = supabase;                                       // Expose to console
+    console.log('[reset-page] client attached to window.supabase');   // #1
+
+    const btn   = document.getElementById('btn');
+    const pw    = document.getElementById('pw');
+    const msg   = document.getElementById('msg');
+    const form  = document.getElementById('form');
+    const successBox = document.getElementById('success');
+
+    /* ------------------------------------------------------------------ *
+     * 1️⃣  Exchange the ?code=… in the URL for a real session             *
+     * ------------------------------------------------------------------ */
+    (async () => {
+      console.log('[exchange] starting...');                          // #2
+      const { error } = await supabase.auth.exchangeCodeForSession();
+      if (error) {
+        console.error('[exchange] failed:', error);                   // #2-err
+        msg.textContent = 'Invalid or expired link – request a new reset email.';
+        btn.disabled = true;
+        throw error;
+      }
+      console.log('[exchange] success – session:',
+                  (await supabase.auth.getSession()).data.session);   // #3
+    })();
+
+    /* ------------------------------------------------------------------ *
+     * 2️⃣  Update password on click                                       *
+     * ------------------------------------------------------------------ */
+    btn.addEventListener('click', async () => {
+      const newPw = pw.value.trim();
+      if (newPw.length < 6) {
+        msg.textContent = 'Password must be at least 6 characters.';
+        console.warn('[updateUser] too short – abort');               // #4-warn
+        return;
+      }
+
+      console.log('[updateUser] sending request…');                   // #4
+      btn.disabled = true;
+      msg.textContent = 'Updating...';
+
+      const { error } = await supabase.auth.updateUser({ password: newPw });
+
+      if (error) {
+        console.error('[updateUser] failed:', error);                 // #4-err
+        msg.textContent = error.message || 'Something went wrong.';
+        btn.disabled = false;
+      } else {
+        console.log('[updateUser] success');                          // #5
+        form.style.display = 'none';
+        successBox.style.display = 'block';
+      }
+    });
+  </script>
+
+</body>
+</html>
