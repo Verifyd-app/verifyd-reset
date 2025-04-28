@@ -1,25 +1,27 @@
 <!-- ① Load the UMD bundle for Supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.js"></script>
 
-<!-- ② Main reset-password logic -->
+<!-- ② Wrap all logic in DOMContentLoaded so elements exist -->
 <script>
-  console.log('[reset-page] script loaded');
+document.addEventListener('DOMContentLoaded', async () => {
+  console.log('[reset-page] DOMContentLoaded – initializing');
 
-  // 1) Grab the UMD factory object that the bundle exported
+  // 1) Grab the UMD factory object
   const SupabaseFactory = window.supabase;
   if (!SupabaseFactory) {
     document.getElementById('msg').textContent =
       'Internal error: auth library failed to load.';
-    throw new Error('Supabase UMD factory not found');
+    console.error('Supabase UMD factory not found');
+    return;
   }
   console.log('[reset-page] UMD factory loaded');
 
-  // 2) Instantiate your actual client
+  // 2) Instantiate your Supabase client
   const supabaseClient = SupabaseFactory.createClient(
     'https://qcsxqutctqougpbdlvdq.supabase.co',  // ← your Supabase URL
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjc3hxdXRjdHFvdWdwYmRsdmRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUyNzMwMzAsImV4cCI6MjA2MDg0OTAzMH0.ERBUhLr3Q6A2Rlauy42MABPehFztLKR6_E2IgR7r_1A'                              // ← your Supabase anon key
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjc3hxdXRjdHFvdWdwYmRsdmRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUyNzMwMzAsImV4cCI6MjA2MDg0OTAzMH0.ERBUhLr3Q6A2Rlauy42MABPehFztLKR6_E2IgR7r_1A'                              // ← your anon key
   );
-  window.supabaseClient = supabaseClient;        // expose for debugging
+  window.supabaseClient = supabaseClient;
   console.log('[reset-page] supabaseClient created');
 
   // 3) Cache DOM nodes
@@ -29,18 +31,16 @@
   const formBox = document.getElementById('form');
   const okBox   = document.getElementById('success');
 
-  // 4) On load, verify the implicit‐grant tokens were processed
-  (async () => {
-    const { data, error } = await supabaseClient.auth.getSession();
-    console.log('[session-check]', data.session, error);
-    if (!data.session || error) {
-      msg.textContent = 'Session not found. Please use the link from your email.';
-    } else {
-      btn.disabled = false;
-    }
-  })();
+  // 4) Confirm the implicit-grant session is present
+  const { data, error } = await supabaseClient.auth.getSession();
+  console.log('[session-check]', data.session, error);
+  if (!data.session || error) {
+    msg.textContent = 'Session not found. Please use the link from your email.';
+    return;
+  }
+  btn.disabled = false;
 
-  // 5) When the user clicks “Update password”
+  // 5) Handle the password update
   btn.addEventListener('click', async () => {
     const newPw = pw.value.trim();
     if (newPw.length < 6) {
@@ -51,10 +51,10 @@
     btn.disabled = true;
     msg.textContent = 'Updating…';
 
-    const { error } = await supabaseClient.auth.updateUser({ password: newPw });
-    if (error) {
-      console.error('[updateUser] failed:', error);
-      msg.textContent = error.message || 'Something went wrong.';
+    const { error: updateErr } = await supabaseClient.auth.updateUser({ password: newPw });
+    if (updateErr) {
+      console.error('[updateUser] failed:', updateErr);
+      msg.textContent = updateErr.message || 'Something went wrong.';
       btn.disabled = false;
     } else {
       console.log('[updateUser] success');
@@ -62,4 +62,5 @@
       okBox.style.display  = 'block';
     }
   });
+});
 </script>
